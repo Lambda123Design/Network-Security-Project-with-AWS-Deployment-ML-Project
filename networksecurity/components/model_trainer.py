@@ -1,6 +1,8 @@
 import os
 import sys
 import mlflow
+import dagshub
+import joblib
 
 from networksecurity.exception.exception import NetworkSecurityException 
 from networksecurity.logging.logger import logging
@@ -30,17 +32,24 @@ class ModelTrainer:
             self.data_transformation_artifact=data_transformation_artifact
         except Exception as e:
             raise NetworkSecurityException(e,sys)
-        
-    def track_mlflow(self,best_model,classificationmetric):
-        with mlflow.start_run():
-            f1_score=classificationmetric.f1_score
-            precision_score=classificationmetric.precision_score
-            recall_score=classificationmetric.recall_score
 
-            mlflow.log_metric("f1_score",f1_score)
-            mlflow.log_metric("precision",precision_score)
-            mlflow.log_metric("recall_score",recall_score)
-            mlflow.sklearn.log_model(best_model,"model")
+    def track_mlflow(self, best_model, classificationmetric):
+
+        dagshub.init(
+            repo_owner="ashwathbalas",
+            repo_name="Network-Security-Project-with-AWS-Deployment-ML-Project",
+            mlflow=True
+        )
+
+        with mlflow.start_run():
+
+            mlflow.log_metric("f1_score", classificationmetric.f1_score)
+            mlflow.log_metric("precision", classificationmetric.precision_score)
+            mlflow.log_metric("recall_score", classificationmetric.recall_score)
+
+            joblib.dump(best_model, "model.pkl")
+            mlflow.log_artifact("model.pkl")
+            os.remove("model.pkl")
 
     def train_model(self,X_train,y_train,x_test,y_test):
         models = {
@@ -98,7 +107,10 @@ class ModelTrainer:
         os.makedirs(model_dir_path,exist_ok=True)
 
         Network_Model=NetworkModel(preprocessor=preprocessor,model=best_model)
-        save_object(self.model_trainer_config.trained_model_file_path,obj=NetworkModel)
+        save_object(self.model_trainer_config.trained_model_file_path,obj=Network_Model)
+
+        # Model Pusher
+        save_object("final_model/model.pkl",best_model)
         
         # Model Trainer Artifact
         model_trainer_artifact=ModelTrainerArtifact(trained_model_file_path=self.model_trainer_config.trained_model_file_path,
