@@ -12,5 +12,6 @@ joblib
 fastapi
 uvicorn
 python-multipart
+dotenv
 
 ## -e . 
