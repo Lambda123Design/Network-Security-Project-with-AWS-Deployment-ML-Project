@@ -9,5 +9,8 @@ mlflow
 dagshub
 pyaml
 joblib
+fastapi
+uvicorn
+python-multipart
 
 ## -e . 
